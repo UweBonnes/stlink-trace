@@ -73,6 +73,7 @@ void endit(int sig)
 	canRun = 0;
 }
 
+static int tx_ep, trace_ep;
 int main(int argc, char** argv)
 {
      int ret, pos, opt = 0;
@@ -284,11 +285,18 @@ int IsStlink(libusb_device* dev)
          printf("Unable to get device descriptor/n");
          return 0;
      }
-
-     if ((desc.idVendor != STLINKV2_VENDOR_ID) || (desc.idProduct != STLINKV2_PRODUCT_ID))
+     if ((desc.idVendor != STLINKV2_VENDOR_ID) ||
+         ((desc.idProduct & STLINKV2_GROUP_MASK) != STLINKV2_GROUP))
          return 0;
-
-     printf("Found an ST-Link V2\n");
+     printf("ID 0x%04x\n", desc.idProduct);
+     if (desc.idProduct == STLINKV2_0_PID) {
+         tx_ep = 2;
+         trace_ep = 3;
+     } else {
+         tx_ep = 1;
+         trace_ep = 2;
+     }
+     printf("Found an ST-Link V2.%s\n", (desc.idProduct == STLINKV2_0_PID)? "0":"1+");
      printf("NumConfigurations: %d\n", desc.bNumConfigurations);
      printf("DeviceClass: 0x%02x\n", desc.bDeviceClass);
      printf("VendorID: 0x%04x\n", desc.idVendor);
@@ -691,7 +699,7 @@ int ReadTraceData(int toscreen, int rxSize)
     libusb_fill_bulk_transfer(
             responseTransfer,
             stlinkhandle,
-            3 | LIBUSB_ENDPOINT_IN,
+            trace_ep | LIBUSB_ENDPOINT_IN,
             rxBuffer+trace_offset,
             rxSize,
             NULL,
@@ -711,7 +719,7 @@ int ReadTraceData(int toscreen, int rxSize)
 
 		ret = libusb_bulk_transfer(
 					 stlinkhandle,
-					 3 | LIBUSB_ENDPOINT_IN,
+					 trace_ep | LIBUSB_ENDPOINT_IN,
 					 rxBuffer+trace_offset,
 					 totalBytes,
 					 &bytesRead,
@@ -824,7 +832,7 @@ ssize_t TransferData(int terminate,
      libusb_fill_bulk_transfer(
              requestTransfer,
              stlinkhandle,
-             2 | LIBUSB_ENDPOINT_OUT,
+             tx_ep | LIBUSB_ENDPOINT_OUT,
              transmitBuffer,
              transmitLength,
              NULL,
@@ -858,7 +866,7 @@ ssize_t TransferData(int terminate,
 
      ret = libusb_bulk_transfer(
                   stlinkhandle,
-                  2 | LIBUSB_ENDPOINT_OUT,
+                  tx_ep | LIBUSB_ENDPOINT_OUT,
                   transmitBuffer,
                   transmitLength,
                   &bytesTransferred,

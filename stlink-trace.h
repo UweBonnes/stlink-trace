@@ -15,7 +15,9 @@
 // Bus 002 Device 052: ID 0483:3748 SGS Thomson Microelectronics ST-LINK/V2
 
 #define STLINKV2_VENDOR_ID    0x0483
-#define STLINKV2_PRODUCT_ID   0x3748
+#define STLINKV2_GROUP        0x3740
+#define STLINKV2_GROUP_MASK   0xfff0
+#define STLINKV2_0_PID        0x3748
 
 #define DEBUG_LEVEL           3
 
