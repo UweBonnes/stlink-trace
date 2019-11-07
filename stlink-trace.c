@@ -572,12 +572,14 @@ void HaltRunningSystem()
 
 void GetTargetVoltage()
 {
-	unsigned char txBuffer[] = {0xF7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	unsigned char rxBuffer[100];
-	int bytesRead = SendAndReceive(&txBuffer[0], 16, &rxBuffer[0],64);
+	unsigned char txBuffer[] = {0xF7};
+	unsigned char rxBuffer[8];
+	int bytesRead = SendAndReceive(&txBuffer[0], 16, &rxBuffer[0], 8);
     if (bytesRead > 0) {
-        printf("Target Voltage: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
-       		 rxBuffer[0], rxBuffer[1], rxBuffer[2], rxBuffer[3], rxBuffer[4], rxBuffer[5], rxBuffer[6], rxBuffer[7]);
+        unsigned int calib = rxBuffer[0] | rxBuffer[1] << 8;
+        unsigned int data = rxBuffer[4] | rxBuffer[5] << 8;
+        double result = 2.0 * data * 1.2 / calib;
+        printf("Target Voltage: %4.2fV\n", result);
     }
     else {
         printf("Unable to read target voltage\n");
